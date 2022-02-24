@@ -10,6 +10,7 @@ public class CameraController : MonoBehaviour
     public Vector3 targetOffset;
 
     private Camera cam;
+
     private float pitch = 0;
     private float yaw = 0;
     private float dollyDis = 10;
@@ -17,6 +18,8 @@ public class CameraController : MonoBehaviour
     public float mouseSensY = -5;
     public float mouseSensScoll = 5;
 
+    //how many seconds to shake....~~~~~fgwfefwfgewf
+    private float shakeTimer = 0;
 
     void Start()
     {
@@ -77,7 +80,7 @@ public class CameraController : MonoBehaviour
         dollyDis += Input.mouseScrollDelta.y * mouseSensScoll;
         dollyDis = Mathf.Clamp(dollyDis, 3, 20);
 
-        float tempZ = isAiming ? 2 : dollyDis;
+        float tempZ = isAiming ? 10 : dollyDis;
 
         cam.transform.localPosition = AnimMath.Ease(cam.transform.localPosition, new Vector3(0, 0, -tempZ), .02f);
 
@@ -87,21 +90,50 @@ public class CameraController : MonoBehaviour
         {
             //rig rotation
             Vector3 vToAimTarget = player.target.transform.position - cam.transform.position;
+            Quaternion worldRot = Quaternion.LookRotation(vToAimTarget);
+            Quaternion localRot = worldRot;
 
-            Vector3 euler = Quaternion.LookRotation(vToAimTarget).eulerAngles;
+            if (cam.transform.parent)
+            {
+                localRot = Quaternion.Inverse(cam.transform.parent.rotation) * worldRot;
+            }
 
-            euler.y = AnimMath.AngleWrapDegrees(playerYaw, euler.y);
-
-            Quaternion temp = Quaternion.Euler(euler.x, euler.y, 0);
+            Vector3 euler = localRot.eulerAngles;
+            euler.z = 0;
+            localRot.eulerAngles = euler;
             
             //point at target
-            cam.transform.rotation = AnimMath.Ease(cam.transform.rotation, temp, .001f);
+            cam.transform.localRotation = AnimMath.Ease(cam.transform.localRotation, localRot, .001f);
         }
         else
         {
             cam.transform.localRotation = AnimMath.Ease(cam.transform.localRotation, Quaternion.identity, .001f);
         }
 
+        UpdateShake();
+
+    }
+
+    void UpdateShake()
+    {
+        if (shakeTimer < 0) return;
+        shakeTimer -= Time.deltaTime;
+        float p = shakeTimer / 1;
+        p = p * p;
+        p = AnimMath.Lerp(1, .98f, p);
+
+        //sends back halfway
+        Quaternion randomRot = AnimMath.Lerp(Random.rotation, Quaternion.identity, p); 
+
+        cam.transform.localRotation *= randomRot;//+= Random.onUnitSphere * .1f;
+
+    }
+    public void Shake(float time)
+    {
+        if(time > shakeTimer) shakeTimer = time;
+
+        //for growing intensity
+        //shakeTimer += time;
     }
 
     private void OnDrawGizmos()

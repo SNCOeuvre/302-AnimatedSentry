@@ -8,8 +8,8 @@ public class PlayerTargeting : MonoBehaviour
     [Range(1,20)]
     public int roundsPerSecond = 5;
 
-    public Transform boneShoulderRight;
-    public Transform boneShoulderLeft;
+    public PointAt boneShoulderRight;
+    public PointAt boneShoulderLeft;
 
     //allows to read, but not set outside this class
 
@@ -22,9 +22,13 @@ public class PlayerTargeting : MonoBehaviour
     private float coolDownPickTarget = 0;
     private float coolDownAttack = 0;
 
+    private CameraController cam;
+
     void Start()
     {
-        
+        cam = FindObjectOfType<CameraController>();
+        Cursor.lockState = CursorLockMode.Locked;
+
     }
 
     void Update()
@@ -41,7 +45,13 @@ public class PlayerTargeting : MonoBehaviour
 
             if (target != null)
             {
-                if (!CanSeeThing(target))
+
+                //turn towards it~~~
+                Vector3 toTarget = target.transform.position - transform.position;
+                toTarget.y = 0;
+
+
+                if (toTarget.magnitude > 3 && !CanSeeThing(target))
                 {
                     target = null;
                 }
@@ -53,6 +63,11 @@ public class PlayerTargeting : MonoBehaviour
         {
             target = null;
         }
+
+
+        //first if, then if statement; if target is true, grab transform, if not, null
+        if(boneShoulderLeft) boneShoulderLeft.target = target ? target.transform : null;
+        if(boneShoulderRight) boneShoulderRight.target = target ? target.transform : null;
 
         DoAttack();
         //print(target);
@@ -71,8 +86,9 @@ public class PlayerTargeting : MonoBehaviour
         //spawn projectiles...
 
         //or take health away from target
-        boneShoulderLeft.localEulerAngles += new Vector3(-28, 0, 0);
-        boneShoulderRight.localEulerAngles += new Vector3(-29, 0, 0);
+        boneShoulderLeft.transform.localEulerAngles += new Vector3(-28, 0, 0);
+        boneShoulderRight.transform.localEulerAngles += new Vector3(-29, 0, 0);
+        if(cam) cam.Shake(0.2f);
     }
     void ScanForTargets()
     {
